@@ -32,6 +32,7 @@
 #define PREFERENCES_DEVICE_REGISTERED_KEY    "plugin"
 #define PREFERENCES_SF_KEY                   "sf"
 #define PREFERENCES_FILENAME_KEY             "filename"
+#define PREFERENCES_FRAME_ID_KEY             "frame_id"   // must-have: frame currently on the panel
 #define PREFERENCES_CURRENT_PATH_KEY         "curr_path"
 #define PREFERENCES_LAST_PATH_KEY            "last_path"
 #define PREFERENCES_PLAYLIST_ORDER_KEY       "playlist_order"
