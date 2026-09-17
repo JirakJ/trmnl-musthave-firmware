@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include <ArduinoLog.h>
 #include <Wire.h>
+#include <adc_samples.h>
 #include <battery.h>
 #include <config.h>
+#include <trmnl_log.h>
 
 static uint16_t readReg16(uint8_t u8Addr, uint8_t u8Reg) {
   uint16_t u16;
@@ -32,17 +34,29 @@ float ADCBattery::readVoltage(TRMNL_DEVICE *pDevice) {
       digitalWrite(pDevice->batt_en_pin, HIGH);
       delay(10); // Wait for the switch to stabilize
     }
-    int32_t adc = 0;
-    analogRead(
-      pDevice->batt_pin); // This is needed to properly initialize the ADC BEFORE calling analogReadMilliVolts()
-    for (uint8_t i = 0; i < 8; i++) {
-      adc += analogReadMilliVolts(pDevice->batt_pin);
+    // Warm-up conversions initialise the ADC; the burst is reduced with a median so a few
+    // not-yet-settled zero conversions cannot halve the result (2.05 V for a 4.11 V battery).
+    analogRead(pDevice->batt_pin); // needed to properly initialize the ADC BEFORE calling analogReadMilliVolts()
+    for (uint8_t i = 0; i < ADC_SAMPLES_WARMUP; i++) {
+      analogReadMilliVolts(pDevice->batt_pin);
+      delay(2);
+    }
+    uint32_t samples[ADC_SAMPLES_COUNT];
+    for (uint8_t i = 0; i < ADC_SAMPLES_COUNT; i++) {
+      samples[i] = analogReadMilliVolts(pDevice->batt_pin);
+      delayMicroseconds(250);
     }
     if (pDevice->batt_en_pin != 0xff) {
       digitalWrite(pDevice->batt_en_pin, LOW);
     }
-    int32_t sensorValue = (adc / 8) * 2;
-    Log.info("%s [%d]: Battery sensorValue = %d\r\n", __FILE__, __LINE__, (int)sensorValue);
+    uint32_t median = adcSamplesMedian(samples, ADC_SAMPLES_COUNT);
+    if (adcSamplesUnstable(samples, ADC_SAMPLES_COUNT, median)) {
+      Log_error_submit("battery adc unstable: min %u max %u median %u mV (pin)", (unsigned)samples[0],
+                       (unsigned)samples[ADC_SAMPLES_COUNT - 1], (unsigned)median);
+    }
+    int32_t sensorValue = (int32_t)median * 2;
+    Log.info("%s [%d]: Battery sensorValue = %d (median of %d, min %u, max %u)\r\n", __FILE__, __LINE__,
+             (int)sensorValue, ADC_SAMPLES_COUNT, (unsigned)samples[0], (unsigned)samples[ADC_SAMPLES_COUNT - 1]);
     return (float)sensorValue / 1000.0f;
   } else if (pDevice->batt_type == BATT_BQ27220) { // BQ27220
     Wire.begin(pDevice->sensor_sda, pDevice->sensor_scl);

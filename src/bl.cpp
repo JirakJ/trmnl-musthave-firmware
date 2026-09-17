@@ -30,6 +30,9 @@
 #include "api-client/submit_log.h"
 #include <api-client/setup.h>
 #include <special_function.h>
+#ifdef BYOS_PROTOCOL_V1
+#include <byos_recovery.h>
+#endif
 #include <refresh_interval.h>
 #include <services/firmware_update.h>
 #include <api_response_parsing.h>
@@ -1201,16 +1204,14 @@ void bl_init(void)
   }
 
 #ifdef BYOS_PROTOCOL_V1
-  if (request_result != HTTPS_SUCCESS && request_result != HTTPS_NO_ERR && request_result != HTTPS_NO_REGISTER &&
-      request_result != HTTPS_RESET && request_result != HTTPS_PLUGIN_NOT_ATTACHED)
+  if (byosKeepFrameOnError(request_result))
   {
     // BYOS recovery: the server (or the LAN) is down. The panel keeps whatever it shows, no error screen even on a
     // button wake; retry quietly 60 s x BYOS_QUIET_FAST_RETRIES, then every 5 minutes for as long as it takes. The first
     // successful /api/display resets the counter and the server sends a full frame if it no longer knows X-Frame-Id.
     uint8_t retries = preferences.getInt(PREFERENCES_CONNECT_API_RETRY_COUNT);
     uint32_t retry_sleep = refreshInterval.applyQuietRetry(retries);
-    if (retries < 250)
-      preferences.putInt(PREFERENCES_CONNECT_API_RETRY_COUNT, retries + 1);
+    preferences.putInt(PREFERENCES_CONNECT_API_RETRY_COUNT, byosNextRetryCount(retries));
     Log_info("byos: server unreachable (%s), keeping the last frame, retry %d in %u s",
              https_request_err_str(request_result), retries, retry_sleep);
     display_sleep();
@@ -2702,8 +2703,7 @@ static void wifiErrorDeepSleep()
   // BYOS recovery: keep the last frame, never show WIFI_FAILED; 60 s x BYOS_QUIET_FAST_RETRIES, then every 5 minutes
   // until the network is back (a successful connect resets the counter).
   uint32_t retry_sleep = refreshInterval.applyQuietRetry(retry_count);
-  if (retry_count < 250)
-    preferences.putInt(PREFERENCES_CONNECT_WIFI_RETRY_COUNT, retry_count + 1);
+  preferences.putInt(PREFERENCES_CONNECT_WIFI_RETRY_COUNT, byosNextRetryCount(retry_count));
   Log_info("byos: Wi-Fi down, keeping the last frame, retry %d in %u s", retry_count, retry_sleep);
   display_sleep();
   goToSleep();

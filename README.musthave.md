@@ -18,6 +18,9 @@ Fork of [usetrmnl/firmware](https://github.com/usetrmnl/firmware) for the TRMNL 
   screen, not even on a button wake) and the device retries quietly: 60 s for the first 3 attempts, then every
   5 minutes for as long as it takes. The first successful `/api/display` resets the counters; the server sends a
   full frame when it no longer knows the `X-Frame-Id` on the panel.
+- **Robust battery reading**: 16 ADC conversions after a warm-up, reduced with a median instead of an
+  average, so a few not-yet-settled zero conversions cannot halve the reported voltage (2.05 V for a
+  4.11 V battery was observed on some builds). Unstable bursts are reported to the server log.
 - **Build-time server URL**: `BYOS_SERVER_URL` is written to NVS at boot (forces a fresh `/api/setup`), so the
   device is repointed without the captive portal.
 - **Branding**: loading screen (`src/loading.h`), small logo (`src/logo_small.h`), medium logo, OTA messages —
