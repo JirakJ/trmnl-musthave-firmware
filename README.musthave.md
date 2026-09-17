@@ -14,7 +14,7 @@ Fork of [usetrmnl/firmware](https://github.com/usetrmnl/firmware) for the TRMNL 
 - **Update waiting mode**: `ota_wait: true` → poll every `refresh_rate` seconds without drawing, show
   "Waiting for firmware update from jakubjirak.com", update as soon as the server offers a build, then back to sleep.
   No daily OTA throttle (the server only offers a build when the version differs).
-- **Build-time server URL**: `MUSTHAVE_SERVER_URL` is written to NVS at boot (forces a fresh `/api/setup`), so the
+- **Build-time server URL**: `BYOS_SERVER_URL` is written to NVS at boot (forces a fresh `/api/setup`), so the
   device is repointed without the captive portal.
 - **Branding**: loading screen (`src/loading.h`), small logo (`src/logo_small.h`), medium logo, OTA messages —
   "TRMNL enhanced by jakubjirak.com". Images are Group5-compressed `BB_BITMAP`s generated with a tiny host tool built
@@ -25,9 +25,9 @@ Fork of [usetrmnl/firmware](https://github.com/usetrmnl/firmware) for the TRMNL 
 
 ```bash
 uv tool install platformio                      # or pipx
-export MUSTHAVE_SERVER_URL=http://192.168.0.84:8080   # your BYOS server, no trailing slash
-pio run -e trmnl_musthave                        # → ~/.platformio/workspaces/trmnl-musthave/build/trmnl_musthave/firmware.bin
-pio run -e trmnl_musthave -t upload --upload-port /dev/cu.usbmodemXXXX
+export BYOS_SERVER_URL=http://192.168.0.84:8080   # your BYOS server, no trailing slash
+pio run -e trmnl_byos                        # → ~/.platformio/workspaces/trmnl-musthave/build/trmnl_byos/firmware.bin
+pio run -e trmnl_byos -t upload --upload-port /dev/cu.usbmodemXXXX
 pio test -e native                               # unit tests incl. test_v1_parse, test_v1_headers
 ```
 
