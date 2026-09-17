@@ -58,6 +58,7 @@ struct ApiDisplayResponse {
   String regions_url;
   V1FullMode full_mode;
   V1SleepMode sleep_mode;
+  bool ota_wait;  // server is preparing an update: poll fast, do not draw, do not deep-sleep long
 };
 
 struct ApiDisplayInputs {

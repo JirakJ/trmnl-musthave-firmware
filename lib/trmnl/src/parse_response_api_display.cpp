@@ -32,7 +32,8 @@ ApiDisplayResponse parseResponse_apiDisplay(String &payload) {
         .full_url = "",
         .regions_url = "",
         .full_mode = V1_FULL_FULL,
-        .sleep_mode = V1_SLEEP_DEEP};
+        .sleep_mode = V1_SLEEP_DEEP,
+        .ota_wait = false};
   }
   // protocol v1: missing/unknown values fall back to the stock behaviour (full refresh via image_url)
   String v1ActionStr = doc["action"] | "";
@@ -78,5 +79,6 @@ ApiDisplayResponse parseResponse_apiDisplay(String &payload) {
       .full_url = fullUrl.length() ? fullUrl : imageUrl,
       .regions_url = doc["regions_url"] | "",
       .full_mode = (fullModeStr == "fast") ? V1_FULL_FAST : V1_FULL_FULL,
-      .sleep_mode = (sleepModeStr == "light") ? V1_SLEEP_LIGHT : V1_SLEEP_DEEP};
+      .sleep_mode = (sleepModeStr == "light") ? V1_SLEEP_LIGHT : V1_SLEEP_DEEP,
+      .ota_wait = doc["ota_wait"] | false};
 }

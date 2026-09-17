@@ -1501,6 +1501,9 @@ static https_request_err_e downloadAndShow()
       free(buffer);
       buffer = nullptr;
       DisplayedImage::remember(szTemp); // current image becomes the previous image
+#ifdef MUSTHAVE_FW
+      preferences.putString(PREFERENCES_FRAME_ID_KEY, apiDisplayResult.response.frame_id);
+#endif
       // Rotate NVS path keys: last ← current ← szTemp
       String _curPath = preferences.getString(PREFERENCES_CURRENT_PATH_KEY, "");
       String _lastPath = preferences.getString(PREFERENCES_LAST_PATH_KEY, "");
@@ -1570,6 +1573,9 @@ static https_request_err_e downloadAndShow()
     Log.info("%s [%d]: Decoding %s\r\n", __FILE__, __LINE__, (isPNG) ? "png" : "jpeg");
     display_show_image(buffer, content_size, true);
     DisplayedImage::remember(szTemp); // current image becomes the previous image
+#ifdef MUSTHAVE_FW
+    preferences.putString(PREFERENCES_FRAME_ID_KEY, apiDisplayResult.response.frame_id);
+#endif
     png_res = PNG_NO_ERR; // DEBUG
     String _curPath = preferences.getString(PREFERENCES_CURRENT_PATH_KEY, "");
     String _lastPath = preferences.getString(PREFERENCES_LAST_PATH_KEY, "");
@@ -1723,6 +1729,21 @@ https_request_err_e handleApiDisplayResponse(ApiDisplayResponse &apiResponse)
       uint64_t rate = apiResponse.refresh_rate;
       reset_firmware = apiResponse.reset_firmware;
 #ifdef MUSTHAVE_FW
+      if (apiResponse.ota_wait)
+      {
+        // OTA waiting mode: short polls, no drawing; the server flips update_firmware when the binary is ready.
+        Log.info("%s [%d]: musthave: ota_wait, polling every %d s\r\n", __FILE__, __LINE__, (int)rate);
+        if (!preferences.getBool(PREFERENCES_OTA_WAIT_SHOWN, false))
+        {
+          display_show_msg_api(storedLogoOrDefault(0), "Waiting for firmware update from jakubjirak.com ...");
+          preferences.putBool(PREFERENCES_OTA_WAIT_SHOWN, true);
+        }
+      }
+      else if (preferences.getBool(PREFERENCES_OTA_WAIT_SHOWN, false))
+      {
+        preferences.putBool(PREFERENCES_OTA_WAIT_SHOWN, false);
+        preferences.remove(PREFERENCES_FRAME_ID_KEY); // the panel shows the waiting screen, force a full frame next
+      }
       if (apiResponse.v1_action == V1_ACTION_NONE)
       {
         Log.info("%s [%d]: musthave: action none, frame %s stays\r\n", __FILE__, __LINE__, apiResponse.frame_id.c_str());

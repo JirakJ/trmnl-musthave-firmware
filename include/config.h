@@ -4,7 +4,7 @@
 
 #define FW_MAJOR_VERSION 2
 #define FW_MINOR_VERSION 0
-#define FW_PATCH_VERSION 0
+#define FW_PATCH_VERSION 5
 
 // Helper macros for stringification
 #define STRINGIFY(x)     #x
@@ -33,6 +33,7 @@
 #define PREFERENCES_SF_KEY                   "sf"
 #define PREFERENCES_FILENAME_KEY             "filename"
 #define PREFERENCES_FRAME_ID_KEY             "frame_id"   // must-have: frame currently on the panel
+#define PREFERENCES_OTA_WAIT_SHOWN           "ota_shown"  // must-have: "waiting for update" screen already drawn
 #define PREFERENCES_CURRENT_PATH_KEY         "curr_path"
 #define PREFERENCES_LAST_PATH_KEY            "last_path"
 #define PREFERENCES_PLAYLIST_ORDER_KEY       "playlist_order"
