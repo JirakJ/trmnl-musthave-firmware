@@ -6,6 +6,8 @@
 #define MAX_QUIET_SLOW_RETRIES         12  // 12 tries * 5 minutes = 1 hour
 #define SHORT_TERM_SLOW_RETRY_INTERVAL 300 // 5 minutes
 #define LONG_TERM_SLOW_RETRY_INTERVAL  900 // 15 minutes
+#define BYOS_QUIET_FAST_RETRIES        3   // quick 60 s retries before backing off to 5 minutes
+#define BYOS_QUIET_FAST_RETRY_INTERVAL 60
 
 // Single owner of the device's stored refresh interval ("refresh_rate" in NVS):
 // the number of seconds goToSleep() arms the deep-sleep timer with. Covers the
@@ -35,6 +37,9 @@ public:
   // Retry ladders; attempt is 1-based.
   uint32_t applyApiRetry(uint8_t attempt);  // 15 / 30 / 60, then SHORT_TERM_SLOW_RETRY_INTERVAL
   uint32_t applyWifiRetry(uint8_t attempt); // 60 / 180, then 300
+  // BYOS: the panel keeps the last frame while the server or Wi-Fi is down; 60 s for the first
+  // BYOS_QUIET_FAST_RETRIES attempts, then SHORT_TERM_SLOW_RETRY_INTERVAL for as long as it takes.
+  uint32_t applyQuietRetry(uint8_t attempt);
   uint32_t applyDefault();                  // fixed fallback, e.g. /api/setup 404
 
 private:

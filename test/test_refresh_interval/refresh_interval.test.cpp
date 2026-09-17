@@ -129,6 +129,17 @@ void test_default_fallback_is_five_minutes(void) {
   TEST_ASSERT_EQUAL_UINT32(SHORT_TERM_SLOW_RETRY_INTERVAL, refreshInterval.seconds());
 }
 
+void test_quiet_retry_is_fast_then_five_minutes_forever(void) {
+  MemoryPersistence persistence;
+  RefreshInterval refreshInterval(persistence);
+  TEST_ASSERT_EQUAL_UINT32(BYOS_QUIET_FAST_RETRY_INTERVAL, refreshInterval.applyQuietRetry(1));
+  TEST_ASSERT_EQUAL_UINT32(BYOS_QUIET_FAST_RETRY_INTERVAL, refreshInterval.applyQuietRetry(BYOS_QUIET_FAST_RETRIES));
+  TEST_ASSERT_EQUAL_UINT32(SHORT_TERM_SLOW_RETRY_INTERVAL,
+                           refreshInterval.applyQuietRetry(BYOS_QUIET_FAST_RETRIES + 1));
+  TEST_ASSERT_EQUAL_UINT32(SHORT_TERM_SLOW_RETRY_INTERVAL, refreshInterval.applyQuietRetry(250)); // never escalates
+  TEST_ASSERT_EQUAL_UINT32(SHORT_TERM_SLOW_RETRY_INTERVAL, refreshInterval.seconds());
+}
+
 void test_seconds_defaults(void) {
   MemoryPersistence persistence;
   RefreshInterval refreshInterval(persistence);
@@ -157,6 +168,7 @@ void process() {
   RUN_TEST(test_api_retry_is_flat_five_minutes);
   RUN_TEST(test_wifi_retry_backs_off_after_quiet_retries);
   RUN_TEST(test_default_fallback_is_five_minutes);
+  RUN_TEST(test_quiet_retry_is_fast_then_five_minutes_forever);
   RUN_TEST(test_seconds_defaults);
   UNITY_END();
 }

@@ -14,6 +14,10 @@ Fork of [usetrmnl/firmware](https://github.com/usetrmnl/firmware) for the TRMNL 
 - **Update waiting mode**: `ota_wait: true` → poll every `refresh_rate` seconds without drawing, show
   "Waiting for firmware update from jakubjirak.com", update as soon as the server offers a build, then back to sleep.
   No daily OTA throttle (the server only offers a build when the version differs).
+- **Outage recovery**: when the BYOS server or the Wi-Fi is unreachable the panel keeps the last frame (no error
+  screen, not even on a button wake) and the device retries quietly: 60 s for the first 3 attempts, then every
+  5 minutes for as long as it takes. The first successful `/api/display` resets the counters; the server sends a
+  full frame when it no longer knows the `X-Frame-Id` on the panel.
 - **Build-time server URL**: `BYOS_SERVER_URL` is written to NVS at boot (forces a fresh `/api/setup`), so the
   device is repointed without the captive portal.
 - **Branding**: loading screen (`src/loading.h`), small logo (`src/logo_small.h`), medium logo, OTA messages —

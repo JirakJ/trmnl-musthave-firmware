@@ -1051,11 +1051,13 @@ void bl_init(void)
     }
     else
     {
+#ifndef BYOS_PROTOCOL_V1
       if (should_show_error_now)
       {
         showMessageWithLogo(WIFI_FAILED);
         current_msg = WIFI_FAILED;
       }
+#endif
 
       Log_fatal_submit("Connection failed! WL Status: %d", WiFi.status());
 
@@ -1198,6 +1200,28 @@ void bl_init(void)
     preferences.putInt(PREFERENCES_CONNECT_API_RETRY_COUNT, 1);
   }
 
+#ifdef BYOS_PROTOCOL_V1
+  if (request_result != HTTPS_SUCCESS && request_result != HTTPS_NO_ERR && request_result != HTTPS_NO_REGISTER &&
+      request_result != HTTPS_RESET && request_result != HTTPS_PLUGIN_NOT_ATTACHED)
+  {
+    // BYOS recovery: the server (or the LAN) is down. The panel keeps whatever it shows, no error screen even on a
+    // button wake; retry quietly 60 s x BYOS_QUIET_FAST_RETRIES, then every 5 minutes for as long as it takes. The first
+    // successful /api/display resets the counter and the server sends a full frame if it no longer knows X-Frame-Id.
+    uint8_t retries = preferences.getInt(PREFERENCES_CONNECT_API_RETRY_COUNT);
+    uint32_t retry_sleep = refreshInterval.applyQuietRetry(retries);
+    if (retries < 250)
+      preferences.putInt(PREFERENCES_CONNECT_API_RETRY_COUNT, retries + 1);
+    Log_info("byos: server unreachable (%s), keeping the last frame, retry %d in %u s",
+             https_request_err_str(request_result), retries, retry_sleep);
+    display_sleep();
+    goToSleep();
+  }
+  else
+  {
+    Log_info("byos: connection done successfully. Retries counter reset.");
+    preferences.putInt(PREFERENCES_CONNECT_API_RETRY_COUNT, 1);
+  }
+#else
   if (request_result == HTTPS_IMAGE_DOWNLOAD_FAILED)
   {
     // The API answered (and already set the refresh interval); only the image host failed.
@@ -1237,6 +1261,7 @@ void bl_init(void)
     Log_info("Connection done successfully or WiFi failed. Retries counter reset.");
     preferences.putInt(PREFERENCES_CONNECT_API_RETRY_COUNT, 1);
   }
+#endif
 
   submitStoredLogs();
 
@@ -2672,6 +2697,18 @@ static void wifiErrorDeepSleep()
   uint8_t retry_count = preferences.getInt(PREFERENCES_CONNECT_WIFI_RETRY_COUNT);
 
   Log_info("WIFI connection failed! Retry count: %d \n", retry_count);
+
+#ifdef BYOS_PROTOCOL_V1
+  // BYOS recovery: keep the last frame, never show WIFI_FAILED; 60 s x BYOS_QUIET_FAST_RETRIES, then every 5 minutes
+  // until the network is back (a successful connect resets the counter).
+  uint32_t retry_sleep = refreshInterval.applyQuietRetry(retry_count);
+  if (retry_count < 250)
+    preferences.putInt(PREFERENCES_CONNECT_WIFI_RETRY_COUNT, retry_count + 1);
+  Log_info("byos: Wi-Fi down, keeping the last frame, retry %d in %u s", retry_count, retry_sleep);
+  display_sleep();
+  goToSleep();
+  return;
+#endif
 
   refreshInterval.applyWifiRetry(retry_count);
 

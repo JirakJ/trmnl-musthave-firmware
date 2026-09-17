@@ -39,6 +39,12 @@ uint32_t RefreshInterval::applyWifiRetry(uint8_t attempt) {
   return sleep;
 }
 
+uint32_t RefreshInterval::applyQuietRetry(uint8_t attempt) {
+  uint32_t sleep = attempt <= BYOS_QUIET_FAST_RETRIES ? BYOS_QUIET_FAST_RETRY_INTERVAL : SHORT_TERM_SLOW_RETRY_INTERVAL;
+  writeIfChanged(sleep);
+  return sleep;
+}
+
 uint32_t RefreshInterval::applyDefault() {
   writeIfChanged(SHORT_TERM_SLOW_RETRY_INTERVAL);
   return SHORT_TERM_SLOW_RETRY_INTERVAL;
